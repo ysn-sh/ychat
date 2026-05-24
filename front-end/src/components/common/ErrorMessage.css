@@ -1,0 +1,18 @@
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  color: #f87171;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.error-icon {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.error-text {
+  line-height: 1.2;
+}

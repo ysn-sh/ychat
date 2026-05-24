@@ -1,0 +1,22 @@
+
+.auth-alt-action {
+  width: 80%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  justify-items: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.auth-link {
+  color: var(--accent);
+  font-size: 1.5rem;
+  line-height: 1rem;
+  font-family: jaro;
+  text-decoration: none;
+  margin-left: 0.25rem;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}

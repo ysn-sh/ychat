@@ -1,0 +1,28 @@
+.oauth-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: var(--spacing-s) var(--spacing-m);
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  border: 1px solid;
+  background-color: white;
+  cursor: pointer;
+  text-decoration: none;
+  color: #333;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.oauth-button:hover {
+  background-color: #f5f5f5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.oauth-button__icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1.2rem;
+  padding: var(--spacing-m);
+}
