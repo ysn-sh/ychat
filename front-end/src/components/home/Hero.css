@@ -1,0 +1,39 @@
+.hero-container {
+    display: flex;
+    background-color: var(--bg-light);
+    align-items: center;
+    height: 80%;
+    margin-top: var(--spacing-xxl);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    gap: var(--spacing-xxl)
+
+}
+
+img {
+    border-radius: var(--border-radius);
+    height:80%;
+    
+}
+
+.hero-text {
+    display: grid;
+    gap: var(--spacing-l)
+}
+
+h1 {
+    font-size: 3rem;
+    font-weight: bolder;
+    letter-spacing: -2px;
+    line-height: 1.2;
+}
+
+p {
+    font-size: 1.2rem;
+}
+
+.CTA {
+    font-size: 1.5rem;
+    color: var(--accent);
+    font-weight: bolder
+}

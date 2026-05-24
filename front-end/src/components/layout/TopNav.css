@@ -5,7 +5,7 @@
   padding: var(--spacing-m);
   background-color: var(--bg);
   width: 100%;
-  border-radius: var(--border-radius)
+  border-radius: var(--border-radius);
 }
 
 .logo {
@@ -16,6 +16,10 @@
   letter-spacing: -2px;
 }
 
+.logo::first-letter {
+  color: var(--text);
+  font-size: 110%;
+}
 .topnav-actions {
   display: flex;
   align-items: center;

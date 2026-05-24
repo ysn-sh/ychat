@@ -1,9 +1,11 @@
-import { Input } from "@/components/common/Input";
+import Hero from "@/components/home/Hero";
+import Story from "@/components/home/Story";
 
 export function HomePage() {
     return (
-        <div>
-            <Input title="Username" label="Username"></Input>
-            Home Page</div>
+    <>
+        <Hero/>
+        <Story/>
+    </>
     )
 }
