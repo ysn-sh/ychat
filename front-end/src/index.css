@@ -33,6 +33,7 @@ main {
   --bg-dark: hsla(0, 0%, 10%, 1);
   --accent: hsla(170, 66%, 46%, 1);
 
+  --spacing-xxs: 0.125rem;
   --spacing-xs: 0.25rem;
   --spacing-s: 0.5rem;
   --spacing-m: 1rem;
