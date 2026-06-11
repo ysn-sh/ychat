@@ -1,22 +1,15 @@
-import { useEffect, useRef } from "react"
+import { useEffect, type RefObject } from "react";
 
-/**
- * Hook to auto-scroll a container to the bottom when content changes.
- * @param deps - Dependencies that trigger the scroll (usually messages array)
- */
-export function useAutoScroll(deps: any[] = []) {
-  const containerRef = useRef<HTMLElement | null>(null)
+export function useAutoScroll(ref: RefObject<HTMLElement | null>, deps: any[]) {
+  const scrollToBottom = () => {
+    if (ref.current) {
+      ref.current.scrollTop = ref.current.scrollHeight;
+    }
+  };
 
   useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
+    scrollToBottom();
+  }, deps);
 
-    // Scroll smoothly to the bottom
-    el.scrollTo({
-      top: el.scrollHeight,
-      behavior: "smooth",
-    })
-  }, deps)
-
-  return containerRef
+  return { scrollToBottom };
 }

@@ -1,0 +1,21 @@
+.chat-header {
+  padding: var(--spacing-m);
+  border-bottom: 1px solid var(--bg-dark);
+  background-color: var(--bg-light);
+}
+
+.chat-header__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header__title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.chat-header__status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

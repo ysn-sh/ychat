@@ -61,6 +61,13 @@ p {
   margin-bottom: var(--spacing-m);
 }
 
+.CTA {
+  font-size: 1.5rem;
+  color: var(--accent);
+  font-weight: bolder;
+  display: inline-block;
+  margin-top: var(--spacing-s);
+}
 /* Webkit */
 ::-webkit-scrollbar {
   width: 8px;
@@ -107,7 +114,6 @@ button:hover {
 
 a {
   color: var(--text);
-
 }
 
 input, textarea {

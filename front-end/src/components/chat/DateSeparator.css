@@ -1,0 +1,12 @@
+.date-separator {
+  display: flex;
+  justify-content: center;
+  margin: var(--spacing-m) 0;
+}
+.date-separator__text {
+  background-color: var(--bg-dark);
+  padding: var(--spacing-xs) var(--spacing-m);
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}

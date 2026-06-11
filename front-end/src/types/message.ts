@@ -1,14 +1,19 @@
-import { type User } from "./user"
-
-export type MessageType = "text" | "image" | "file" | "system"
-
 export interface Message {
-  id: string
-  conversationId: string
-  sender: User
-  type: MessageType
-  content: string
-  timestamp: number
-  reactions?: Record<string, string[]>
-  edited?: boolean
+  id: string;
+  conversationId: string;
+  senderId: string;
+  sender?: {
+    id: string;
+    username: string;
+    displayName?: string | null;
+    avatarHash?: string | null;
+  };
+  contentType: 'text' | 'voice' | 'video' | 'image' | 'file';
+  content?: string | null;
+  mediaHash?: string | null;
+  mediaMetadata?: any;
+  replyTo?: string | null;
+  editedAt?: string | null;
+  createdAt?: string;
+  timestamp?: number;
 }

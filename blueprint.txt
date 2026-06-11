@@ -1,0 +1,392 @@
+# ChatApp – Complete Project Blueprint & Implementation Guide
+
+> **Last updated:** June 2026
+> **Status:** Web front‑end built (Vite + React); backend about to start.
+> This document contains everything required to continue development from any point. Paste it into an AI session to resume work instantly.
+
+---
+
+## 1. Project Context & Goals
+
+**Type:** Production‑grade chat application
+**Clients:**
+- **Web:** Vite + React (TypeScript) SPA – already scaffolded with UI components, auth forms, ChatWindow, etc.
+- **Mobile:** React Native (custom built, NOT a Telegram fork)
+
+**Must‑have features for launch:**
+- Text messaging (1‑on‑1 and groups)
+- Voice messages
+- Video messages
+- File transfer (images, documents)
+
+**Non‑functional requirements:**
+- Free to run (self‑hosted on VPS/bare metal)
+- Production‑level code quality, security, and observability
+- Team primary languages: JavaScript/TypeScript and Python (backend will be TypeScript for full‑stack consistency)
+
+---
+
+## 2. Web Frontend (Vite SPA) – Current State
+
+### 2.1 Project Structure (simplified)
+
+    src/
+    ├── api/                  # empty – will hold API client functions
+    ├── components/
+    │   ├── auth/             # Login, Register, OAuthButton, UsernameInput, etc.
+    │   ├── chat/             # ChatWindow, MessageList, MessageInput, Sidebar, etc.
+    │   ├── common/           # Modal, Spinner, Toast, DropDownMenu, etc.
+    │   └── layout/           # ChatWrapper, TopNav, etc.
+    ├── context/
+    │   ├── AuthContext.tsx    # holds user object (currently no real auth)
+    │   ├── ChatContext.tsx
+    │   ├── SettingsContext.tsx
+    │   └── WebSocketContext.tsx
+    ├── hooks/
+    │   ├── useAuth.ts
+    │   ├── useChat.ts
+    │   ├── useWebSocket.ts   # custom hook; sends JSON {event, payload}; currently passes userId via query param (insecure)
+    │   └── ...
+    ├── pages/                # React Router pages (Home, Chat, Login, Register, etc.)
+    ├── types/                # user.ts, conversation.ts, message.ts
+    └── websocket/            # events.ts, socketHandlers.ts, socket.ts
+
+### 2.2 Current Authentication & Data Fetching
+- No real auth implemented yet; AuthContext exists but not connected to any API.
+- No data fetching strategy (REST/GraphQL) – chosen now.
+- useWebSocket hook attaches ?userId=${user.id} to the WS URL – **needs to be replaced with token‑based auth** (see backend plan).
+
+### 2.3 Required Frontend Adjustments
+- Replace WebSocket auth: send a { type: "auth", token: "access_token" } message right after connection.
+- Create an API client in src/api/ using fetch/axios with automatic access token attachment and refresh logic.
+- Store access token in memory (React Context), refresh token in HttpOnly cookie (web) or secure storage (mobile).
+- Share TypeScript interfaces between front‑end and backend (via a monorepo package or copied types).
+
+---
+
+## 3. Backend Technology Stack & Rationale
+
+| Layer               | Technology                                   | Why                                                                                   |
+|---------------------|----------------------------------------------|---------------------------------------------------------------------------------------|
+| Runtime             | Node.js (LTS) + TypeScript                  | Same language as front‑end; excellent for real‑time; huge ecosystem.                 |
+| HTTP Framework      | Fastify + @fastify/websocket                | Faster than Express, full TS support, built‑in validation, WebSocket in same server. |
+| Database            | PostgreSQL 16                                | Reliable, full‑text search, JSON support.                                             |
+| Cache & Pub/Sub     | Redis (or Valkey)                            | Session store, rate limiting, presence TTL, WebSocket fan‑out.                       |
+| File/Object Storage | MinIO (self‑hosted, S3‑compatible)          | Free, production‑ready; presigned URLs for upload/download.                          |
+| Background Jobs     | BullMQ (Redis‑backed)                        | For thumbnail generation, push notifications, cleanup.                                |
+| Push Notifications  | FCM (Android), APNs (iOS), Web Push (VAPID) | Required for mobile; optional for web.                                                |
+| Monitoring          | Pino (logger), Prometheus + Grafana         | Structured logging and metrics; zero cost.                                            |
+| Deployment          | Docker Compose + Caddy (reverse proxy)      | Single VPS; Caddy auto‑renews Let’s Encrypt SSL.                                     |
+
+**Architecture:** Modular monolith (no microservices initially). All modules in the same Node.js process with clear boundaries. WebSocket gateway runs inside the same Fastify instance, sharing auth.
+
+---
+
+## 4. Backend Project Structure
+
+    backend/
+    ├── src/
+    │   ├── modules/
+    │   │   ├── auth/          # registration, login, token refresh, OAuth
+    │   │   ├── user/          # profiles, contacts, privacy settings
+    │   │   ├── chat/          # conversations, messages CRUD, read receipts
+    │   │   ├── media/         # upload URLs, processing trigger, download
+    │   │   ├── presence/      # online/offline, typing indicators
+    │   │   ├── notification/  # push notification sender, in-app via WS
+    │   │   └── search/        # message and user search (PG full‑text)
+    │   ├── infrastructure/
+    │   │   ├── db/            # PostgreSQL client (pg or Knex), migrations
+    │   │   ├── cache/         # Redis client (ioredis)
+    │   │   ├── ws/            # WebSocket gateway, event routing, auth handler
+    │   │   ├── storage/       # MinIO client (minio-js)
+    │   │   └── jobs/          # BullMQ queues and workers
+    │   ├── shared/
+    │   │   ├── types/         # Shared TypeScript interfaces
+    │   │   ├── errors/        # Custom error classes (AppError, etc.)
+    │   │   └── utils/
+    │   └── app.ts             # Fastify instance assembly, route registration, WS attach
+    ├── migrations/            # SQL migration files (e.g., using node-pg-migrate)
+    ├── tests/
+    ├── docker-compose.yml     # postgres, redis, minio
+    ├── Dockerfile
+    └── package.json
+
+---
+
+## 5. Database Schema (Core Tables)
+
+    CREATE TABLE users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      username VARCHAR(30) UNIQUE NOT NULL,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      display_name TEXT,
+      avatar_hash TEXT,
+      status_last_seen TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+
+    CREATE TABLE conversations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      type VARCHAR(10) NOT NULL CHECK (type IN ('direct', 'group', 'channel')),
+      name TEXT,
+      avatar_hash TEXT,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+
+    CREATE TABLE conversation_participants (
+      conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      joined_at TIMESTAMPTZ DEFAULT now(),
+      role VARCHAR(10) DEFAULT 'member' CHECK (role IN ('owner','admin','member')),
+      PRIMARY KEY (conversation_id, user_id)
+    );
+
+    CREATE TABLE messages (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+      sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      content_type VARCHAR(20) NOT NULL CHECK (content_type IN ('text','voice','video','image','file')),
+      content TEXT,
+      media_hash TEXT,
+      media_metadata JSONB,
+      reply_to UUID REFERENCES messages(id),
+      edited_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+    CREATE INDEX idx_messages_conversation_created ON messages(conversation_id, created_at);
+
+    CREATE TABLE message_reads (
+      message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      read_at TIMESTAMPTZ DEFAULT now(),
+      PRIMARY KEY (message_id, user_id)
+    );
+
+    CREATE TABLE files (
+      content_hash TEXT PRIMARY KEY,
+      mime_type TEXT,
+      size BIGINT,
+      original_name TEXT,
+      uploader_id UUID REFERENCES users(id),
+      uploaded_at TIMESTAMPTZ DEFAULT now()
+    );
+
+    CREATE TABLE user_devices (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      platform VARCHAR(10) NOT NULL CHECK (platform IN ('ios','android','web')),
+      push_token TEXT,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+
+---
+
+## 6. API Design (REST + WebSocket)
+
+### 6.1 REST Endpoints (Fastify routes)
+
+**Authentication**
+- POST /api/auth/register – body: { username, email, password } → sets refresh cookie, returns { user, accessToken }.
+- POST /api/auth/login – body: { email, password } → same as register.
+- POST /api/auth/refresh – reads refresh cookie, returns new { accessToken }.
+- POST /api/auth/logout – clears refresh cookie.
+
+**Users**
+- GET /api/users/:id – get profile.
+- PATCH /api/users/:id – update profile.
+- GET /api/users/search?q= – search users.
+
+**Conversations**
+- GET /api/conversations – list user’s conversations (with last message and unread count).
+- POST /api/conversations – create direct or group chat.
+- GET /api/conversations/:id – get conversation details.
+- PATCH /api/conversations/:id – update group info (admins only).
+
+**Messages**
+- GET /api/conversations/:id/messages?before=<msgId>&limit=50 – paginated history.
+- POST /api/conversations/:id/messages – send a new message. Body: { content_type, content?, media_hash?, media_metadata?, reply_to? }.
+- PATCH /api/messages/:id – edit message.
+- DELETE /api/messages/:id – delete message.
+- POST /api/messages/:id/read – mark as read.
+
+**Media**
+- POST /api/media/upload-url – body: { contentHash, mimeType, size } → returns { uploadUrl (presigned PUT), fileId (contentHash) } or { alreadyExists: true, fileId }.
+- GET /api/media/:contentHash – redirect to a presigned download URL.
+- POST /api/media/process – called by client after upload to trigger thumbnail generation (or use MinIO webhooks).
+
+**Devices**
+- POST /api/devices – register a device token for push.
+
+### 6.2 WebSocket Protocol
+
+Connect to wss://yourdomain/ws.
+First message from client must be:
+    { "type": "auth", "token": "access_token" }
+Server validates token, maps connection to user, subscribes to Redis channels user:<id> and conversation channels as needed.
+
+**Client → Server events:**
+- "typing.start" / "typing.stop" – payload: { conversationId }
+- "presence.ping" – keep alive
+
+**Server → Client events:**
+- "message.new" – { conversationId, message }
+- "message.updated" – { conversationId, message }
+- "message.deleted" – { conversationId, messageId }
+- "typing" – { conversationId, userId, isTyping }
+- "presence.update" – { userId, status, lastSeen }
+- "conversation.created" – { conversation }
+- "notification" – { title, body, conversationId }
+
+---
+
+## 7. File Transfer & Media Processing Flow
+
+1. Client precomputes SHA‑256 of the file locally (crypto.subtle/web crypto).
+2. Requests upload URL via POST /api/media/upload-url with hash, mime, size.
+3. Server checks files table:
+   - If hash exists → return alreadyExists: true, fileId: hash. Client can skip upload.
+   - Else → generates a presigned PUT URL for MinIO, inserts a row in files with status uploading.
+4. Client uploads directly to MinIO using the presigned URL.
+5. After upload, client calls POST /api/media/process (or a MinIO bucket notification) to trigger background job.
+6. Background job (BullMQ) uses ffmpeg to:
+   - Transcode voice/video into optimal formats (e.g., Opus in WebM for voice).
+   - Generate thumbnails for images/video and store them alongside.
+7. Client sends a message with content_type = 'image', media_hash = 'sha256...', media_metadata including durations, thumbnails, etc.
+
+---
+
+## 8. Authentication & Security Details
+
+- Passwords: bcrypt hashed (cost 12).
+- Tokens: JWT signed with RS256 or HS256. Access token (15 min), Refresh token (7 days, stored in HTTP‑only cookie for web, or in secure storage for mobile).
+- API Protection: Fastify onRequest hook verifies JWT on all routes except auth routes.
+- WebSocket Protection: Auth message verified before any other messages accepted.
+- Rate Limiting: @fastify/rate-limit backed by Redis.
+- Input Validation: Fastify schema validation on all routes.
+- CORS: Configured for your exact domain(s).
+
+---
+
+## 9. Implementation Roadmap (Phase-wise)
+
+### Phase 1 – Foundation (Auth & User Profiles) [Week 1]
+- Set up backend project (Fastify, TypeScript, Docker Compose with PostgreSQL, Redis, MinIO).
+- Implement auth module (register, login, token refresh, logout).
+- Create user migration and user module (profile CRUD, search).
+- Write shared types for User.
+- Integrate AuthContext in web frontend with API calls; replace insecure WebSocket auth with token.
+- Test with Postman / curl.
+
+### Phase 2 – Direct Messaging [Week 2]
+- Implement conversations module (create direct chat, list, details).
+- Implement messages module (send text messages, paginated history, mark read).
+- WebSocket gateway: authenticate, subscribe to user channel, broadcast message.new, message.updated.
+- Adjust useChat, MessageList, MessageInput to call real API/WS.
+- Ensure correct message ordering and read receipts.
+
+### Phase 3 – Group Chats & Presence [Week 3]
+- Extend conversations for group creation (add/remove members, roles).
+- Group WebSocket channels (fan-out to all online participants).
+- Presence module: Redis keys with TTL, periodic pings; emit presence.update.
+- Typing indicators via WebSocket.
+
+### Phase 4 – Media Messages (Voice, Video, Files) [Week 4]
+- Set up MinIO and presigned URL generation.
+- Implement media upload flow (hash dedup, upload, processing job).
+- Integrate FileUpload component with backend.
+- Build background job for thumbnail/transcoding (use BullMQ and fluent-ffmpeg).
+- Deliver voice/video messages as playable media in the UI.
+
+### Phase 5 – Notifications & Polish [Week 5]
+- Push notifications: device token storage, BullMQ job sends via FCM/APNs.
+- Web Push integration (optional).
+- Notification preferences.
+- Observability: logging, metrics, dashboards.
+- Security hardening, rate limiting, load testing.
+- Deployment scripts and CI/CD.
+
+---
+
+## 10. Step-by-Step Implementation Starter
+
+**Prerequisites:** Node.js 20+, Docker, git.
+
+1. Clone and init backend
+    mkdir backend && cd backend
+    pnpm init (or npm init)
+    pnpm add fastify @fastify/websocket @fastify/cookie @fastify/cors @fastify/rate-limit @fastify/jwt ioredis pg bullmq minio pino
+    pnpm add -D typescript @types/node ts-node nodemon
+    npx tsc --init
+
+2. Docker Compose (docker-compose.yml):
+    version: '3.8'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        environment:
+          POSTGRES_USER: chatapp
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: chatapp
+        ports: ['5432:5432']
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+      minio:
+        image: minio/minio
+        command: server /data --console-address ":9001"
+        environment:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        ports: ['9000:9000', '9001:9001']
+
+3. Configure Fastify (app.ts)
+   - Register plugins (cookie, jwt, websocket, cors).
+   - Import and register route modules from src/modules/*/routes.ts.
+   - Start server on port 3000.
+
+4. Run first migration using node-pg-migrate or knex
+    pnpm add -D node-pg-migrate
+    # create migration file, paste SQL above.
+
+5. Implement auth routes:
+   - /auth/register – validate input, hash password, insert user, generate tokens, set cookie, return access token + user.
+   - /auth/login – verify password, same tokens flow.
+   - /auth/refresh – verify refresh token from cookie, issue new access token.
+
+6. Create WebSocket handler in src/infrastructure/ws/wsHandler.ts:
+   - Listen for upgrade on /ws.
+   - On open, wait for auth message.
+   - Verify JWT, store userId on socket.
+   - Subscribe to Redis channel user:<userId> and forward messages to socket.
+   - Provide a publishEvent(conversationId, event, payload) function that publishes to conversation:<id> and also to each participant’s user channel for offline delivery.
+
+7. Implement message sending:
+   - REST endpoint persists message to DB.
+   - After insert, call publishEvent(conversationId, 'message.new', { conversationId, message }).
+   - Mark message as sent, and on client confirm delivery via WebSocket.
+
+---
+
+## 11. Tracking Progress Checklist
+
+- [ ] Backend scaffold + DB + Docker Compose running
+- [ ] Auth module (register, login, refresh, logout) with tests
+- [ ] User profile & search endpoints
+- [ ] WebSocket auth & connection management
+- [ ] Conversation creation (direct)
+- [ ] Send/receive text messages via REST + WS
+- [ ] Message pagination & read receipts
+- [ ] Group chats (member management, roles)
+- [ ] Presence (online/offline) & typing indicators
+- [ ] Media upload (presigned URLs, MinIO integration)
+- [ ] Background processing (thumbnail/transcoding) with BullMQ
+- [ ] Push notifications (FCM/APNs) for offline users
+- [ ] Web frontend fully integrated (replace mock data with API calls)
+- [ ] Monitoring & alerting basics
+- [ ] Deployment (Caddy + Docker) to VPS
+- [ ] Load test & performance tuning
+
+---
+
+> **Tip:** You can split this file into ARCHITECTURE.md, DATABASE.md, API_SPEC.md, and ROADMAP.md if you prefer. Keep them in a docs/ folder for reference.

@@ -1,0 +1,15 @@
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.empty-conversations {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--spacing-l);
+  text-align: center;
+  color: var(--text-muted);
+  align-items: center;
+  justify-content: center;
+}

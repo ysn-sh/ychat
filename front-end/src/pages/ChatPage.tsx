@@ -1,5 +1,10 @@
+import { ChatLayout } from "@/layouts/ChatLayout";
+import { ChatWindow } from "@/components/chat/ChatWindow";
+
 export function ChatPage() {
-    return(
-        <div>ChatPage</div>
-    )
+  return (
+    <ChatLayout>
+      <ChatWindow />
+    </ChatLayout>
+  );
 }

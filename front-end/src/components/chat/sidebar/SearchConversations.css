@@ -1,0 +1,12 @@
+.search-conversations {
+  padding: var(--spacing-s);
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--spacing-s);
+  border: 1px solid var(--bg-dark);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-dark);
+  color: var(--text);
+}

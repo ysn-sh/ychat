@@ -1,0 +1,17 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 400px;
+  background-color: var(--bg);
+  border-right: 1px solid var(--bg-dark);
+}
+
+.sidebar-header {
+  background-color: var(--bg);
+  padding: var(--spacing-m);
+  border-bottom: 1px solid var(--bg-dark);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}

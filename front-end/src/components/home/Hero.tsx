@@ -15,13 +15,13 @@ export default function Hero () {
             <p>
             free messenger app designed and developed by a guy with too much free time.
         </p>
-            <a className='CTA' href='/'>
+            <a className='hero-CTA' href='/register'>
             Create an account &#x2192;
         </a>
             </div>
         
         </div>
-        <img src="public/images/HomePage/placeholderShowcase.jpeg" alt="App Showcase image"></img>
+        <img src="/images/HomePage/placeholderShowcase.jpeg" alt="App Showcase image"></img>
     </div>
     )
 }

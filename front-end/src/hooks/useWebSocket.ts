@@ -1,61 +1,78 @@
-import { useEffect, useRef, useState, useCallback } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { getAccessToken } from "@/api/client";
 
-type EventHandler = (data: any) => void
+type EventHandler = (data: any) => void;
 
-interface UseWebSocketReturn {
-  sendEvent: (event: string, payload: any) => void
-  subscribe: (event: string, handler: EventHandler) => void
-  unsubscribe: (event: string, handler: EventHandler) => void
-  connected: boolean
-}
+export function useWebSocket(url: string) {
+  const { user, isAuthenticated } = useAuth();
+  const socketRef = useRef<WebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const handlersRef = useRef<Record<string, EventHandler[]>>({});
 
-export function useWebSocket(url: string): UseWebSocketReturn {
-  const { user } = useAuth()
-  const socketRef = useRef<WebSocket | null>(null)
-  const [connected, setConnected] = useState(false)
-  const handlersRef = useRef<Record<string, EventHandler[]>>({})
-
-  // Connect socket
+  // Connect when authenticated
   useEffect(() => {
-    if (!user) return
+    if (!isAuthenticated || !user) return;
 
-    const ws = new WebSocket(`${url}?userId=${user.id}`)
-    socketRef.current = ws
+    let socket: WebSocket;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
 
-    ws.onopen = () => setConnected(true)
-    ws.onclose = () => setConnected(false)
-    ws.onmessage = (msg) => {
-      try {
-        const data = JSON.parse(msg.data)
-        const { event, payload } = data
-        handlersRef.current[event]?.forEach((h) => h(payload))
-      } catch (err) {
-        console.warn("Invalid WS message", err)
+    const connect = () => {
+      socket = new WebSocket(url);
+
+      socket.onopen = () => {
+        setIsConnected(true);
+        // Authenticate immediately
+        const token = getAccessToken();
+        if (token) {
+          socket.send(JSON.stringify({ type: "auth", token }));
+        }
+      };
+
+      socket.onclose = () => {
+        setIsConnected(false);
+        // Auto-reconnect after 3s
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          const { event: eventName, payload } = msg;
+          handlersRef.current[eventName]?.forEach((h) => h(payload));
+        } catch (err) {
+          console.warn("Invalid WS message", err);
+        }
+      };
+
+      socketRef.current = socket;
+    };
+
+    connect();
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      if (socket && socket.readyState !== WebSocket.CLOSED) {
+        socket.close();
       }
-    }
+    };
+  }, [isAuthenticated, user, url]);
 
-    return () => ws.close()
-  }, [user, url])
-
-  // Send event
   const sendEvent = useCallback((event: string, payload: any) => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify({ event, payload }))
+      socketRef.current.send(JSON.stringify({ event, payload }));
     }
-  }, [])
+  }, []);
 
-  // Subscribe to event
   const subscribe = useCallback((event: string, handler: EventHandler) => {
-    if (!handlersRef.current[event]) handlersRef.current[event] = []
-    handlersRef.current[event].push(handler)
-  }, [])
+    if (!handlersRef.current[event]) handlersRef.current[event] = [];
+    handlersRef.current[event].push(handler);
+    return () => {
+      if (handlersRef.current[event]) {
+        handlersRef.current[event] = handlersRef.current[event].filter((h) => h !== handler);
+      }
+    };
+  }, []);
 
-  // Unsubscribe from event
-  const unsubscribe = useCallback((event: string, handler: EventHandler) => {
-    if (!handlersRef.current[event]) return
-    handlersRef.current[event] = handlersRef.current[event].filter((h) => h !== handler)
-  }, [])
-
-  return { sendEvent, subscribe, unsubscribe, connected }
+  return { sendEvent, subscribe, isConnected };
 }

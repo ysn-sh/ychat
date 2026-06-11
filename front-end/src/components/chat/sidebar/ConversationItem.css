@@ -1,0 +1,73 @@
+/* components/chat/sidebar/ConversationItem.css */
+.conversation-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  padding: var(--spacing-s);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.conversation-item:hover {
+  background-color: var(--bg-light);
+}
+
+.conversation-item--active {
+  background-color: var(--bg-light);
+  border-left: 3px solid var(--accent);
+}
+
+.conversation-avatar {
+  width: 48px;
+  height: 48px;
+  background-color: var(--bg-dark);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: var(--text-muted);
+}
+
+.conversation-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.conversation-name {
+  font-weight: bold;
+  margin-bottom: var(--spacing-xxs);
+}
+
+.conversation-last-message {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-xxs);
+}
+
+.conversation-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.conversation-unread {
+  background-color: var(--accent);
+  color: var(--text);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
