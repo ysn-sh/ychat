@@ -22,7 +22,7 @@ export function TopNav() {
             <button>Login</button>
           </Link>
         ) : (
-          <Dropdown trigger={<UserAvatar user={user!} size={44} />} align="right">
+          <Dropdown trigger={<UserAvatar user={user!} size={"lg"} />} align="right">
             <DropdownItem onClick={() => navigate("/profile")}>
               Profile
             </DropdownItem>

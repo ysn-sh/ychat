@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { User } from '@/types/user';
+// import type { User } from '@/types/user';
 
 interface UserSearchResult {
   id: string;

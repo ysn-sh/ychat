@@ -5,14 +5,16 @@ import { ConversationList } from "./ConversationList";
 import { UserAvatar } from "./UserAvatar";
 import { NewConversationModal } from "../NewConversationModal";
 import "./Sidebar.css";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Sidebar() {
   const { conversations, activeConversation, setActiveConversation } = useChatContext();
   const [ isNewChatOpen, setIsNewChatOpen ] = useState(false);
+  const { user } = useAuth()
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <UserAvatar size="md" />
+        <UserAvatar user={user!} size="md" />
         <SearchConversations />
       </div>
       <ConversationList

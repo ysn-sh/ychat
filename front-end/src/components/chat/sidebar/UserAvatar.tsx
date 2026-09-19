@@ -1,8 +1,10 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import "./UserAvatar.css";
+import type { User } from "@/types/user";
 
 interface UserAvatarProps {
+  user: User,
   size?: "sm" | "md" | "lg";
 }
 

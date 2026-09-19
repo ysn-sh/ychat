@@ -5,7 +5,8 @@ export function ChatHeader() {
   const { activeConversation } = useChatContext();
 
   if (!activeConversation) return null;
-
+  if (!activeConversation.participants) return null;
+  
   const participantNames = activeConversation.participants
     .map(p => p.username)
     .join(", ");
