@@ -11,6 +11,7 @@ import { messageRoutes } from '@/modules/chat/messages/routes';
 import { configureWebSocket } from '@/infrastructure/ws/wsHandler';
 import { connectRedis } from '@/infrastructure/cache/redis';
 import { userRoutes } from './modules/user/routes';
+import { healthRoutes } from './modules/health/routes';
 
 async function buildServer() {
   const app = Fastify({ logger: true });
@@ -28,6 +29,7 @@ async function buildServer() {
   await app.register(conversationRoutes, { prefix: '/api/conversations' });
   await app.register(messageRoutes, { prefix: '/api' });
   await app.register(userRoutes, { prefix: '/api/users' });
+  await app.register(healthRoutes, { prefix: '/api/health' });
   // WebSocket
   configureWebSocket(app);
 

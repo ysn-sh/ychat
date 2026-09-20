@@ -1,7 +1,7 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:4050/api',  // adjust if different
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,  // adjust if different
   withCredentials: true,                 // send cookies (refresh token)
 });
 
@@ -35,7 +35,7 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // If the request is to the refresh endpoint itself, don't try to refresh again (prevents loop)
-    if (originalRequest.url === '/auth/refresh') {
+    if (originalRequest.url === 'api/auth/refresh') {
       return Promise.reject(error);
     }
 
@@ -51,7 +51,10 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       try {
-        const { data } = await axios.post('http://localhost:4050/api/auth/refresh', {}, { withCredentials: true });
+        const { data } = await axios.post(
+          '/api/auth/refresh',
+          {},
+          { withCredentials: true });
         setAccessToken(data.accessToken);
         processQueue(null, data.accessToken);
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;

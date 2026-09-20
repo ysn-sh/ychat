@@ -5,7 +5,15 @@ import { pool } from '@/infrastructure/db/pool';
 
 export async function userRoutes(app: FastifyInstance) {
   app.addHook('onRequest', authenticate);
-
+  app.get('/', async (req: FastifyRequest, reply: FastifyReply) => {  
+    const result = await pool.query('SELECT id, username, display_name, avatar_hash FROM users');
+    return reply.send(result.rows.map(row => ({
+      id: row.id,
+      username: row.username,
+      displayName: row.display_name,
+      avatarHash: row.avatar_hash,
+    })));
+  });
   app.get('/me', async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId;
     const user = await authService.getUserById(userId);

@@ -3,5 +3,5 @@ interface Env {
 }
 
 export const env: Env = {
-  VITE_WS_URL: import.meta.env.VITE_WS_URL || "ws://localhost:8080",
+  VITE_WS_URL: import.meta.env.VITE_WS_URL || "ws://localhost:4000",
 };

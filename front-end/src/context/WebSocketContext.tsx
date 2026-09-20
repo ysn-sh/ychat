@@ -10,7 +10,7 @@ interface WSContextType {
 const WebSocketContext = createContext<WSContextType | undefined>(undefined);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
-  const ws = useWebSocket("ws://localhost:4050/ws");
+  const ws = useWebSocket(`${import.meta.env.VITE_WS_URL}/ws`);
 
   return (
     <WebSocketContext.Provider value={ws}>
