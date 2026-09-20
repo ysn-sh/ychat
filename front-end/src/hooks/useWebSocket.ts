@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { getAccessToken } from "@/api/client";
+import { getAccessToken } from "@/api/tokenStore";
 
 type EventHandler = (data: any) => void;
 

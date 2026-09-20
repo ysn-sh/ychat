@@ -1,4 +1,5 @@
-import apiClient, { setAccessToken, clearAccessToken } from './client';
+import apiClient from './client';
+import { setAccessToken, clearAccessToken } from "@/api/tokenStore";
 import type { User } from '@/types/user';
 
 interface AuthResponse {
